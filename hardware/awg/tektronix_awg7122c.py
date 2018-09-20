@@ -998,7 +998,7 @@ class AWG7122C(Base, PulserInterface):
             start = time.time()
             self._write_wfm(filename=wfm_name,
                             analog_samples=analog_samples[a_ch],
-                            digital_samples=mrk_bytes,
+                            marker_bytes=mrk_bytes,
                             is_first_chunk=is_first_chunk,
                             is_last_chunk=is_last_chunk,
                             total_number_of_samples=total_number_of_samples)
@@ -1048,7 +1048,7 @@ class AWG7122C(Base, PulserInterface):
         """
         wfm_list_len = int(self.query('WLIS:SIZE?'))
         wfm_list = list()
-        for index in range(0, wfm_list_len):
+        for index in range(wfm_list_len):
             wfm_list.append(self.query('WLIS:NAME? {0:d}'.format(index)))
         return sorted(wfm_list)
 
