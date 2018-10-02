@@ -372,7 +372,7 @@ class IxonUltra(Base, CameraInterface):
         if check_val == 0:
             check_val = ret_val1 | ret_val2
 
-        if msg != 'DRV_SUCCESS':
+        if error_msg != 'DRV_SUCCESS':
             ret_val3 = -1
         else:
             ret_val3 = 0
