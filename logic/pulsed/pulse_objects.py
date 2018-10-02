@@ -27,6 +27,7 @@ import inspect
 import importlib
 import numpy as np
 from collections import OrderedDict
+import numpy as np
 
 from logic.pulsed.sampling_functions import SamplingFunctions
 from core.util.modules import get_main_dir
@@ -1261,6 +1262,50 @@ class PredefinedGeneratorBase:
                 length += blocks[block_name].increment_s * ((reps ** 2 + reps) / 2)
         return length
 
+
+    def _add_metadata_to_settings(self, block_ensemble, alternating = False, laser_ignore_list = list(),
+                                  controlled_variable = [0,1], units=('s', ''), number_of_lasers = None,
+                                  counting_length=None, created_blocks=None):
+
+        block_ensemble.measurement_information['alternating'] = alternating
+        block_ensemble.measurement_information['laser_ignore_list'] = laser_ignore_list
+        block_ensemble.measurement_information['controlled_variable'] = controlled_variable
+        block_ensemble.measurement_information['units'] = units
+        if number_of_lasers is None:
+            if alternating:
+                block_ensemble.measurement_information['number_of_lasers'] = len(controlled_variable) * 2
+            else:
+                block_ensemble.measurement_information['number_of_lasers'] = len(controlled_variable)
+        else:
+            block_ensemble.measurement_information['number_of_lasers'] = number_of_lasers
+        if counting_length is None:
+            block_ensemble.measurement_information['counting_length'] = self._get_ensemble_count_length(
+                ensemble=block_ensemble, created_blocks=created_blocks)
+        else:
+            block_ensemble.measurement_information['counting_length'] = counting_length
+
+        return block_ensemble
+
+    def _adjust_to_samplingrate(self, value, divisibility):
+        '''
+        @param self: Every pulsing device has a sampling rate which is most of the time adjustable
+        but always limited. Thus it is not possible to generate any arbitrary time value. This function
+        should check if the timing value is generateable with the current sampling rate and if nout round
+        it to the next possible value...
+        @param value: the desired timing value
+        @param divisibility: Takes into account that vonly parts of variables might be used (for example for a pi/2 pulse...)
+        @return: value matching to the current sampling rate of pulser
+        '''
+        resolution=1/self.pulse_generator_settings['sample_rate']*divisibility
+        mod=value%(resolution)
+        if mod<resolution/2:
+            self.log.debug('Adjusted to sampling rate:' + str(value) + ' to ' + str(value-mod))
+            value=value-mod
+        else:
+            value=value+resolution-mod
+        # correct for computational errors
+        value=np.around(value,13)
+        return float(value)
 
 class PulseObjectGenerator(PredefinedGeneratorBase):
     """
