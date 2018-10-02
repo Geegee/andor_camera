@@ -424,20 +424,30 @@ class AWG70K(Base, PulserInterface):
                 return -1
 
             # Set event jump trigger
-            self.sequence_set_event_jump(name,
-                                         step,
-                                         seq_params['event_trigger'],
-                                         seq_params['event_jump_to'])
+            if 'event_trigger' in seq_params:
+                self.sequence_set_event_jump(name,
+                                             step,
+                                             seq_params['event_trigger'],
+                                             seq_params['event_jump_to'])
             # Set wait trigger
-            self.sequence_set_wait_trigger(name, step, seq_params['wait_for'])
+            if 'wait_for' in seq_params:
+                self.sequence_set_wait_trigger(name, step, seq_params['wait_for'])
             # Set repetitions
-            self.sequence_set_repetitions(name, step, seq_params['repetitions'])
+            if 'repetitions' in seq_params:
+                self.sequence_set_repetitions(name, step, seq_params['repetitions'])
             # Set go_to parameter
-            self.sequence_set_goto(name, step, seq_params['go_to'])
+            if 'go_to' in seq_params:
+                if seq_params['go_to'] <= num_steps:
+                    self.sequence_set_goto(name, step, seq_params['go_to'])
+                else:
+                    self.log.error('Assigned "go_to" "{0}" is larger '
+                                   'than the number of steps "{1}".'.format(seq_params['go_to'], num_steps))
+                    return -1
             # Set flag states
-            trigger = seq_params['flag_trigger'] != 'OFF'
-            flag_list = [seq_params['flag_trigger']] if trigger else [seq_params['flag_high']]
-            self.sequence_set_flags(name, step, flag_list, trigger)
+            if 'flag_trigger' in seq_params:
+                trigger = seq_params['flag_trigger'] != 'OFF'
+                flag_list = [seq_params['flag_trigger']] if trigger else [seq_params['flag_high']]
+                self.sequence_set_flags(name, step, flag_list, trigger)
 
         # Wait for everything to complete
         while int(self.query('*OPC?')) != 1:
@@ -1236,7 +1246,8 @@ class AWG70K(Base, PulserInterface):
                            'Sequencer option not installed.')
             return -1
 
-        goto = str(int(goto)) if seq_params['go_to'] > 0 else 'NEXT'
+        if goto < 1:
+            goto = 'NEXT'
         self.write('SLIS:SEQ:STEP{0:d}:GOTO "{1}", {2}'.format(step, sequence_name, goto))
         return 0
 
